@@ -9,8 +9,8 @@
 
 enabled_site_setting :oauth2_enabled
 
-class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
-  option :name, "genesysCoud"
+class ::OmniAuth::Strategies::GenesysCloud < ::OmniAuth::Strategies::OAuth2
+  option :name, "genesysCloud"
 
   uid do
     if path = SiteSetting.oauth2_callback_user_id_path.split(".")
