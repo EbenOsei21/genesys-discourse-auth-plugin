@@ -1,4 +1,8 @@
 login:
+  genesys_cloud_client_id:
+    default: ''
+  genesys_cloud_client_secret:
+    default: ''
   oauth2_enabled:
     default: false
     client: true

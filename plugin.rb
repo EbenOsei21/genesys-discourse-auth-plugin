@@ -3,14 +3,14 @@
 # name: discourse-oauth2-basic
 # about: Generic OAuth2 Plugin
 # version: 0.3
-# authors: Robin Ward
+# authors: Genesys
 # url: https://github.com/discourse/discourse-oauth2-basic
 # transpile_js: true
 
 enabled_site_setting :oauth2_enabled
 
 class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
-  option :name, "oauth2_basic"
+  option :name, "genesysCloud"
 
   uid do
     if path = SiteSetting.oauth2_callback_user_id_path.split(".")
@@ -45,38 +45,38 @@ class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
   end
 end
 
-require "faraday/logging/formatter"
-class OAuth2FaradayFormatter < Faraday::Logging::Formatter
-  def request(env)
-    warn <<~LOG
-      OAuth2 Debugging: request #{env.method.upcase} #{env.url.to_s}
+# require "faraday/logging/formatter"
+# class OAuth2FaradayFormatter < Faraday::Logging::Formatter
+#   def request(env)
+#     warn <<~LOG
+#       OAuth2 Debugging: request #{env.method.upcase} #{env.url.to_s}
 
-      Headers: #{env.request_headers}
+#       Headers: #{env.request_headers}
 
-      Body: #{env[:body]}
-    LOG
-  end
+#       Body: #{env[:body]}
+#     LOG
+#   end
 
-  def response(env)
-    warn <<~LOG
-      OAuth2 Debugging: response status #{env.status}
+#   def response(env)
+#     warn <<~LOG
+#       OAuth2 Debugging: response status #{env.status}
 
-      From #{env.method.upcase} #{env.url.to_s}
+#       From #{env.method.upcase} #{env.url.to_s}
 
-      Headers: #{env.response_headers}
+#       Headers: #{env.response_headers}
 
-      Body: #{env[:body]}
-    LOG
-  end
-end
+#       Body: #{env[:body]}
+#     LOG
+#   end
+# end
 
 # You should use this register if you want to add custom paths to traverse the user details JSON.
 # We'll store the value in the user associated account's extra attribute hash using the full path as the key.
-DiscoursePluginRegistry.define_filtered_register :oauth2_basic_additional_json_paths
+# DiscoursePluginRegistry.define_filtered_register :oauth2_basic_additional_json_paths
 
 class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   def name
-    "oauth2_basic"
+    "genesysCloud"
   end
 
   def can_revoke?
@@ -88,62 +88,62 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   end
 
   def register_middleware(omniauth)
-    omniauth.provider :oauth2_basic,
+    omniauth.provider :genesysCloud,
                       name: name,
                       setup:
                         lambda { |env|
                           opts = env["omniauth.strategy"].options
-                          opts[:client_id] = SiteSetting.oauth2_client_id
-                          opts[:client_secret] = SiteSetting.oauth2_client_secret
-                          opts[:provider_ignores_state] = SiteSetting.oauth2_disable_csrf
+                          opts[:client_id] = SiteSetting.genesys_cloud_client_id
+                          opts[:client_secret] = SiteSetting.genesys_cloud_client_secret
+
                           opts[:client_options] = {
-                            authorize_url: SiteSetting.oauth2_authorize_url,
-                            token_url: SiteSetting.oauth2_token_url,
-                            token_method: SiteSetting.oauth2_token_url_method.downcase.to_sym,
+                            authorize_url: "https://login.mypurecloud.com/oauth/authorize",
+                            token_url: "https://login.mypurecloud.com/oauth/token",
+                            token_method: "POST",
                           }
-                          opts[:authorize_options] = SiteSetting
-                            .oauth2_authorize_options
-                            .split("|")
-                            .map(&:to_sym)
+                          # opts[:authorize_options] = SiteSetting
+                          #   .oauth2_authorize_optionsa
+                          #   .split("|")
+                          #   .map(&:to_sym)
 
-                          if SiteSetting.oauth2_authorize_signup_url.present? &&
-                               ActionDispatch::Request.new(env).params["signup"].present?
-                            opts[:client_options][
-                              :authorize_url
-                            ] = SiteSetting.oauth2_authorize_signup_url
-                          end
+                          # if SiteSetting.oauth2_authorize_signup_url.present? &&
+                          #      ActionDispatch::Request.new(env).params["signup"].present?
+                          #   opts[:client_options][
+                          #     :authorize_url
+                          #   ] = SiteSetting.oauth2_authorize_signup_url
+                          # end
 
-                          if SiteSetting.oauth2_send_auth_header? &&
-                               SiteSetting.oauth2_send_auth_body?
-                            # For maximum compatibility we include both header and body auth by default
-                            # This is a little unusual, and utilising multiple authentication methods
-                            # is technically disallowed by the spec (RFC2749 Section 5.2)
-                            opts[:client_options][:auth_scheme] = :request_body
-                            opts[:token_params] = {
-                              headers: {
-                                "Authorization" => basic_auth_header,
-                              },
-                            }
-                          elsif SiteSetting.oauth2_send_auth_header?
-                            opts[:client_options][:auth_scheme] = :basic_auth
-                          else
-                            opts[:client_options][:auth_scheme] = :request_body
-                          end
+                          # if SiteSetting.oauth2_send_auth_header? &&
+                          #      SiteSetting.oauth2_send_auth_body?
+                          #   # For maximum compatibility we include both header and body auth by default
+                          #   # This is a little unusual, and utilising multiple authentication methods
+                          #   # is technically disallowed by the spec (RFC2749 Section 5.2)
+                          #   opts[:client_options][:auth_scheme] = :request_body
+                          #   opts[:token_params] = {
+                          #     headers: {
+                          #       "Authorization" => basic_auth_header,
+                          #     },
+                          #   }
+                          # elsif SiteSetting.oauth2_send_auth_header?
+                          #   opts[:client_options][:auth_scheme] = :basic_auth
+                          # else
+                          #   opts[:client_options][:auth_scheme] = :request_body
+                          # end
 
-                          unless SiteSetting.oauth2_scope.blank?
-                            opts[:scope] = SiteSetting.oauth2_scope
-                          end
+                          # unless SiteSetting.oauth2_scope.blank?
+                          #   opts[:scope] = SiteSetting.oauth2_scope
+                          # end
 
-                          opts[:client_options][:connection_build] = lambda do |builder|
-                            if SiteSetting.oauth2_debug_auth && defined?(OAuth2FaradayFormatter)
-                              builder.response :logger,
-                                               Rails.logger,
-                                               { bodies: true, formatter: OAuth2FaradayFormatter }
-                            end
+                          # opts[:client_options][:connection_build] = lambda do |builder|
+                          #   if SiteSetting.oauth2_debug_auth && defined?(OAuth2FaradayFormatter)
+                          #     builder.response :logger,
+                          #                      Rails.logger,
+                          #                      { bodies: true, formatter: OAuth2FaradayFormatter }
+                          #   end
 
-                            builder.request :url_encoded # form-encode POST params
-                            builder.adapter FinalDestination::FaradayAdapter # make requests with FinalDestination::HTTP
-                          end
+                          #   builder.request :url_encoded # form-encode POST params
+                          #   builder.adapter FinalDestination::FaradayAdapter # make requests with FinalDestination::HTTP
+                          # end
                         }
   end
 
@@ -302,7 +302,7 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   end
 
   def enabled?
-    SiteSetting.oauth2_enabled
+    true
   end
 end
 
